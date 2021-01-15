@@ -12,6 +12,11 @@
 #include <rtdevice.h>
 #include <of_mtd.h>
 
+#undef DBG_TAG
+#define DBG_TAG "ofmtd.rtt"
+#define DBG_LVL DBG_INFO
+#include <rtdbg.h>
+
 struct of_mtd_node
 {
     struct rt_mtd_nor_device device;
@@ -60,8 +65,8 @@ static of_mtd_t _part_alloc(const of_mtd_t master, const struct of_mtd_part_info
     part = rt_malloc(sizeof(struct of_mtd_info));
     if (part)
     {
+        *part = *master;
         part->master = master;
-        part->ops = master->ops;
         part->offset = partinfo->offset;
         part->size = partinfo->size;
     }
@@ -132,12 +137,15 @@ int of_mtd_parts_add(of_mtd_t master, const struct of_mtd_part_info *parts, int 
 
         part->master = master;
 
-        if (of_mtd_register(parts->name, part))
+        if (of_mtd_register(parts[i].name, part))
         {
             _part_free(part);
-            // TODO error info
+            LOG_E("partition '%s' beging add failure", parts[i].name);
             return -1;
         }
+
+        LOG_I("parttion '%s' [offs:%08X, len:%08X] perfome successfully.",
+            parts[i].name, parts[i].offset, parts[i].size);
     }
 
     return 0;
